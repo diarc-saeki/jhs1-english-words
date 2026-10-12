@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中1英単語マスタータイピング — MODERN ED.</title>
+    <style>
+        :root { --bg: #fcfcfc; --txt: #111; --sub: #707070; --red: #e63946; --brd: #e5e5e5; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--txt); margin: 0; padding: 4vw; display: flex; flex-direction: column; align-items: center; letter-spacing: 0.05em; }
+        .wrapper { width: 100%; max-width: 90vw; margin: 0 auto; text-align: center; }
+        h1 { font-size: calc(24px + 1vw); font-weight: 300; letter-spacing: 0.15em; margin-bottom: 4vh; }
+        .mode-box { display: inline-flex; gap: 30px; padding: 15px 30px; border-top: 1px solid var(--brd); border-bottom: 1px solid var(--brd); margin-bottom: 5vh; font-size: calc(13px + 0.3vw); font-weight: bold; }
+        .mode-box label { cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--sub); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%; }
+        .card { background: #fff; border: 1px solid var(--brd); padding: 25px 20px; text-align: left; cursor: pointer; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 20px; position: relative; overflow: hidden; min-height: 120px; box-sizing: border-box; }
+        .card:hover { border-color: var(--txt); background: #fafafa; transform: translateY(-2px); transition: 0.2s; }
+        .c-num { font-family: 'Impact', 'Arial Black', sans-serif; font-size: calc(50px + 1vw); color: #b0b0b0; line-height: 1; flex-shrink: 0; min-width: 90px; text-align: left; z-index: 2; }
+        .c-info { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; z-index: 2; width: 60%; }
+        .c-ttl { font-weight: bold; font-size: calc(18px + 0.3vw); margin-bottom: 6px; text-align: left; }
+        .c-dsc { font-size: calc(12px + 0.2vw); color: var(--sub); line-height: 1.4; text-align: left; }
+        .c-bg { position: absolute; right: 0; top: 0; height: 100%; width: 120px; opacity: 0.4; pointer-events: none; z-index: 1; }
+        .count { font-family: monospace; font-size: calc(14px + 0.2vw); color: var(--sub); margin-bottom: 2vh; }
+        .img { font-size: calc(80px + 6vw); margin: 2vh 0; line-height: 1.1; }
+        .jp { font-size: calc(28px + 1.5vw); font-weight: 700; margin-bottom: 4vh; }
+        .btns button { background: none; border: 1px solid var(--txt); padding: 10px 20px; font-size: calc(13px + 0.2vw); font-weight: 600; cursor: pointer; margin: 0 5px; }
+        .btns button:hover { background: var(--txt); color: #fff; }
+        .hint-txt { color: var(--red); height: 25px; font-size: calc(14px + 0.3vw); font-weight: bold; margin-bottom: 3vh; }
+        .guide { font-family: monospace; font-size: calc(30px + 2vw); letter-spacing: 0.15em; font-weight: bold; margin-bottom: 3vh; height: 60px; display: none; justify-content: center; }
+        .char-t { color: var(--red); } .char-r { color: #d0d0d0; }
+        .in-wrap { display: flex; justify-content: center; align-items: center; gap: 15px; width: 100%; max-width: 500px; margin: 0 auto; }
+        input[type="text"] { width: 100%; padding: 12px 0; font-size: calc(28px + 1.5vw); text-align: center; border: none; border-bottom: 2px solid var(--brd); background: none; outline: none; font-family: monospace; font-weight: bold; }
+        input[type="text"]:focus { border-bottom-color: var(--txt); }
+        .audio-btn { background: none; border: 1px solid var(--brd); font-size: calc(18px + 0.5vw); padding: 12px; cursor: pointer; aspect-ratio: 1; }
+        .audio-btn:hover { border-color: var(--txt); }
+        .feedback { margin-top: 3vh; font-size: calc(18px + 0.5vw); font-weight: bold; height: 35px; }
+        .sys-btn { background: var(--txt); color: #fff; border: none; padding: 15px 30px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="wrapper" id="root">
+    <div id="sel-view">
+        <h1>English Vocabulary</h1>
+        <div class="mode-box">
+            <label><input type="radio" name="mode" value="hide" checked> ❶ 通常モード (想起)</label>
+            <label><input type="radio" name="mode" value="show"> ❷ ガイドモード (赤変色)</label>
+        </div>
+        <div class="grid" id="btn-box"></div>
+    </div>
+    <div id="game-view" style="display:none;">
+        <div class="count" id="rem"></div><div class="img" id="pic"></div><div class="jp" id="jp"></div>
+        <div class="guide" id="g-dsp"></div>
+        <div class="btns"><button onclick="getHint()">HINT</button><button id="ans-b" onclick="getAns()">ANSWER</button></div>
+        <div class="hint-txt" id="hnt"></div>
+        <div class="in-wrap"><input type="text" id="in" autocomplete="off" placeholder="Type..."><button class="audio-btn" onclick="sayW()">🔊</button></div>
+        <div class="feedback" id="msg"></div>
+    </div>
+</div>
+<script>
+        // 目次カードの「タイトル」と「説明文」の定義（1〜30セット分）
+    const meta = {
+        1: { t: "基本動詞①", d: "料理する・作る・勉強する ほか" },
+        2: { t: "基本動詞②", d: "見る・住む・知っている ほか" },
+        3: { t: "基本動詞③", d: "踊る・買う・出発する ほか" },
+        4: { t: "学校と教科", d: "学校生活・教科・身の回りのもの①" },
+        5: { t: "学校と道具", d: "道具・カバン・乗り物 など" },
+        6: { t: "食事と道具", d: "食べ物・飲み物・食卓の道具" },
+        7: { t: "動物と家", d: "動物・家・建物の一部（床・壁）" },
+        8: { t: "自然と時間", d: "家具・自然（空・海）・時間（日・週）" },
+        9: { t: "時間と頻度", d: "時間（朝・夜）・頻度（いつも・よく）" },
+        10: { t: "施設と状態", d: "街の施設（駅・病院）・形容詞①" },
+        11: { t: "重要形容詞", d: "高低・新旧・暑寒・日常の状態" },
+        12: { t: "感情と性格", d: "感情を表す形容詞・状態（有名など）" },
+        13: { t: "味覚と状態", d: "味覚の形容詞（美味しい・満腹など）" },
+        14: { t: "代名と場所", d: "代名詞（私を）・場所・重要な前置詞①" },
+        15: { t: "前置詞・副詞", d: "前置詞②・副詞・接続詞（～から）" },
+        16: { t: "曜日と季節", d: "曜日（日～土）・季節・大きな数字" },
+        17: { t: "月と行事", d: "カレンダー（1～12月）・イベント" },
+        18: { t: "体と健康", d: "体・健康（頭・目・耳・手足）" },
+        19: { t: "家族と人々", d: "家族・人々（父母・子ども・男女）" },
+        20: { t: "趣味と娯楽", d: "趣味・スポーツ（サッカー・楽器）" },
+        21: { t: "不規則過去①", d: "最重要！一般動詞の過去形（変化①）" },
+        22: { t: "不規則過去②", d: "一般動詞の過去形（変化②）" },
+        23: { t: "気持ちと日常", d: "気持ち・挨拶・日常会話の動詞" },
+        24: { t: "建物と施設", d: "建物・街の施設（城・神社・スーパー）" },
+        25: { t: "世界と環境", d: "世界の国名・地域・言語・自然" },
+        26: { t: "自然と天候", d: "地球・天候（陸・雨雪・雲・植物）" },
+        27: { t: "交通と移動", d: "交通・乗り物・移動（切符・フライト）" },
+        28: { t: "衣服と装飾", d: "衣服・身につけるもの（シャツ・靴）" },
+        29: { t: "体調と医学", d: "体調・症状・健康（熱・風邪・薬）" },
+        30: { t: "総仕上げ", d: "【総まとめ】中1の重要語句ラスト" }
+    };
+
+    // 北欧アート風のモノクロ抽象幾何学ライン（SVG）を割り振る関数
+    function getPattern(i) {
+        const p = [
+            `<svg class="c-bg" viewBox="0 0 100 100"><path d="M0,30 Q25,10 50,30 T100,30 T150,30" fill="none" stroke="#bbb" stroke-width="2"/></svg>`,
+            `<svg class="c-bg" viewBox="0 0 100 100"><circle cx="60" cy="50" r="25" fill="none" stroke="#bbb" stroke-width="1.5"/><line x1="10" y1="10" x2="90" y2="90" stroke="#ccc" stroke-width="1"/></svg>`,
+            `<svg class="c-bg" viewBox="0 0 100 100"><path d="M10,90 L40,20 L70,90 M50,90 L75,40 L100,90" fill="none" stroke="#bbb" stroke-width="1.5"/></svg>`
+        ];
+        return p[(i - 1) % p.length];
+    }
+
+    let current = [], next = [], idx = 0, failed = false, audioCtx = null, isGuide = false;
+
+    function playTone(freqs, duration) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine';
+        if (Array.isArray(freqs)) {
+            let now = audioCtx.currentTime;
+            freqs.forEach((v, i) => osc.frequency.setValueAtTime(v, now + i * 0.08));
+        } else { osc.frequency.setValueAtTime(freqs, audioCtx.currentTime); }
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function say(t) { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); let u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.9; window.speechSynthesis.speak(u); } }
+    function sayW() { if (current[idx]) say(current[idx].w); document.getElementById("in").focus(); }
+
+    function makeBtns() {
+        const box = document.getElementById("btn-box"); const size = 20; let sIdx = 1; box.innerHTML = "";
+        for (let i = 0; i < words.length; i += size) {
+            let chunk = words.slice(i, i + size);
+            let m = meta[sIdx] || { t: "単語帳", d: "重要単語セット" };
+            let numStr = `#${String(sIdx).padStart(2, '0')}`;
+            let b = document.createElement("button"); b.className = "card";
+            b.innerHTML = `<span class="c-num">${numStr}</span><div class="c-info"><span class="c-ttl">${m.t}</span><span class="c-dsc">${m.d}</span></div>${getPattern(sIdx)}`;
+            b.onclick = () => { isGuide = (document.querySelector('input[name="mode"]:checked').value === "show"); current = [...chunk]; next = []; idx = 0; document.getElementById("sel-view").style.display = "none"; document.getElementById("game-view").style.display = "block"; document.getElementById("g-dsp").style.display = isGuide ? "flex" : "none"; document.getElementById("ans-b").style.display = isGuide ? "none" : "inline-block"; play(); };
+            box.appendChild(b); sIdx++;
+        }
+    }
+
+    function play() {
+        if (idx >= current.length) { end(); return; }
+        failed = false; document.getElementById("rem").textContent = `REMAINING: ${current.length - idx}`;
+        document.getElementById("pic").textContent = current[idx].e; document.getElementById("jp").textContent = current[idx].j;
+        document.getElementById("hnt").textContent = ""; document.getElementById("in").value = ""; document.getElementById("msg").textContent = "";
+        if (isGuide) upG(""); document.getElementById("in").focus(); setTimeout(() => { say(current[idx].w); }, 150);
+    }
+
+    function upG(s) {
+        const t = current[idx].w.toLowerCase(), g = document.getElementById("g-dsp"); g.innerHTML = "";
+        for (let i = 0; i < t.length; i++) {
+            let span = document.createElement("span"); span.textContent = t[i];
+            span.className = (i < s.length && s[i] === t[i]) ? "char-t" : "char-r"; g.appendChild(span);
+        }
+    }
+
+    function getHint() { document.getElementById("hnt").textContent = current[idx].p; document.getElementById("in").focus(); }
+    function getAns() { let msg = document.getElementById("msg"); msg.style.color = "var(--txt)"; msg.innerHTML = `正解: <span style="font-family:monospace; background:#f0f0f0; padding:2px 8px;">${current[idx].w}</span>`; if (!failed) { next.push(current[idx]); failed = true; } document.getElementById("in").focus(); }
+
+    document.getElementById("in").addEventListener("input", function() {
+        if (!isGuide) return;
+        let v = this.value.toLowerCase(), t = current[idx].w.toLowerCase();
+        if (t.startsWith(v)) { if (v.length > 0) playTone(880, 0.04); upG(v); } 
+        else { this.value = v.substring(0, v.length - 1); upG(this.value); }
+    });
+
+    document.getElementById("in").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            let v = this.value.trim().toLowerCase(), m = document.getElementById("msg");
+            if (v === current[idx].w.toLowerCase()) {
+                playTone([523.25, 659.25, 783.99], 0.3); say(current[idx].w); m.style.color = "green"; m.textContent = "⭕ 正解！"; setTimeout(() => { idx++; play(); }, 1200); 
+            } else if (!isGuide) {
+                m.style.color = "var(--red)"; m.textContent = "❌ もう一度思い出そう"; if (!failed) { next.push(current[idx]); failed = true; } this.select();
+            }
+        }
+    });
+
+    function end() {
+        let area = document.getElementById("game-view");
+        
+        if (next.length > 0) {
+            // 【新機能】間違えた単語（または正解を見た単語）を視覚的にリストアップする画面
+            let listHtml = `<div style="text-align: left; background: #fff5f5; border: 1px solid #fab1a0; padding: 20px; border-radius: 8px; margin: 20px 0; max-height: 250px; overflow-y: auto;">`;
+            next.forEach(item => {
+                listHtml += `
+                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #ffeaa7; display: flex; align-items: center; gap: 15px;">
+                        <span style="font-size: 30px;">${item.e}</span>
+                        <div>
+                            <strong style="font-size: 20px; color: var(--accent-red); font-family: monospace;">${item.w}</strong> 
+                            <span style="font-size: 14px; color: var(--txt);">（${item.j}）</span>
+                            <div style="font-size: 12px; color: var(--sub); margin-top: 3px;">💡 ${item.p}</div>
+                        </div>
+                    </div>`;
+            });
+            listHtml += `</div>`;
+
+            area.innerHTML = `
+                <h2 style="font-size: 28px; color: var(--accent-red);">REVIEW: あと ${next.length} 問</h2>
+                <p style="font-size: 16px; color: var(--sub);">息子さんが間違えたり、正解を見た単語のリストです。<br>この単語をもう一度解き直して完璧にしよう！</p>
+                ${listHtml}
+                <button class="sys-btn" onclick="retry()" style="background: #2ecc71; width: 100%;">間違えた問題に再挑戦 🔄</button>
+            `;
+        } else {
+            // 【新機能】1度も間違えなかった場合の盛大な祝福演出（ファンファーレ音付き）
+            // 歓喜のファンファーレ音を生成（ド・ミ・ソ・ド〜〜🎵）
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let now = audioCtx.currentTime;
+            [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                let o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination); o.type = 'sine';
+                o.frequency.setValueAtTime(f, now + i * 0.1);
+                g.gain.setValueAtTime(0.1, now + i * 0.1);
+                g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.6);
+                o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.6);
+            });
+
+            area.innerHTML = `
+                <div style="padding: 20px 0;">
+                    <div style="font-size: 80px; margin-bottom: 10px; animation: bounce 1s infinite;">🎉✨🌟✨🎉</div>
+                    <h2 style="font-size: 40px; font-weight: 900; color: #2ecc71; letter-spacing: 0.1em; margin: 10px 0;">PERFECT CLEAR !!</h2>
+                    <div style="font-size: 80px; margin-bottom: 20px;">👑💯👑</div>
+                    <p style="font-size: 20px; font-weight: bold; color: var(--txt); line-height: 1.6;">
+                        すばらしい！1回も間違えずに<br>20語すべてを完璧にタイピングできました！
+                    </p>
+                    <p style="font-size: 15px; color: var(--sub); margin-bottom: 30px;">
+                        フォニックスの音のルールが頭と指に完璧に染み込んでいる証拠です。
+                    </p>
+                    <button class="sys-btn" onclick="location.reload()" style="width: 100%;">セット選択に戻る 🔄</button>
+                </div>
+            `;
+        }
+    }
+
+    window.retry = function() {
+        current = [...next]; next = []; idx = 0;
+        document.getElementById("game-view").innerHTML = `<div class="count" id="rem"></div><div class="img" id="pic"></div><div class="jp" id="jp"></div><div class="guide" id="g-dsp"></div><div class="btns"><button onclick="getHint()">HINT</button><button id="ans-b" onclick="getAns()">ANSWER</button></div><div class="hint-txt" id="hnt"></div><div class="in-wrap"><input type="text" id="in" autocomplete="off" placeholder="Type..."><button class="audio-btn" onclick="sayW()">🔊</button></div><div class="feedback" id="msg"></div>`;
+        document.getElementById("in").addEventListener("input", function() { if (!isGuide) return; let v = this.value.toLowerCase(), t = current[idx].w.toLowerCase(); if (t.startsWith(v)) { if (v.length > 0) playTone(880, 0.04); upG(v); } else { this.value = v.substring(0, v.length - 1); upG(this.value); } });
+        document.getElementById("in").addEventListener("keydown", function(e) { if (e.key === "Enter") { let v = this.value.trim().toLowerCase(), m = document.getElementById("msg"); if (v === current[idx].w.toLowerCase()) { playTone([523.25, 659.25, 783.99], 0.3); say(current[idx].w); m.style.color = "green"; m.textContent = "⭕ 正解！"; setTimeout(() => { idx++; play(); }, 1200); } else if (!isGuide) { m.style.color = "var(--red)"; m.textContent = "❌ もう一度思い出そう"; if (!failed) { next.push(current[idx]); failed = true; } this.select(); } } });
+        document.getElementById("g-dsp").style.display = isGuide ? "flex" : "none"; document.getElementById("ans-b").style.display = isGuide ? "none" : "inline-block"; play();
+    };
+
+  
+    // --- 最初の40語を内蔵してプログラムを締めくくります ---
+    const words = [
+        { w: "cook", j: "料理する", e: "🍳", p: "クック (ooは『ウ』と短く引く音)" },
+        { w: "make", j: "作る", e: "🛠️", p: "メィク (マジックE：最後のeは読まずaをアルファベット読み)" },
+        { w: "take", j: "連れていく・撮る", e: "📸", p: "ティク (マジックE：最後のeは読まずaをアルファベット読み)" },
+        { w: "think", j: "考える", e: "🤔", p: "スィンク (thは前歯で舌をはさむ音、inkの塊に注目)" },
+        { w: "clean", j: "掃除する・きれいな", e: "🧹", p: "クリーン (eaは『イー』と長く伸ばすルール)" },
+        { w: "hope", j: "望む", e: "✨", p: "ホゥプ (マジックE：最後のeは読まずoをアルファベット読み)" },
+        { w: "study", j: "勉強する", e: "✏️", p: "スタディ (yは『イー』と読む。中1の大事な動詞)" },
+        { w: "speak", j: "話す", e: "🗣️", p: "スピーク (eaは『イー』と長く伸ばすルール)" },
+        { w: "write", j: "書く", e: "📝", p: "ライト (最初のwは読まない。マジックEでiをアイ)" },
+        { w: "wash", j: "洗う", e: "🧼", p: "ウォッシュ (shは『シュ』と発音する2文字子音)" },
+        { w: "where", j: "どこに", e: "📍", p: "ウェア (whで『ウ』、場所をたずねる大事な単語)" },
+        { w: "when", j: "いつ", e: "📅", p: "ウェン (whで『ウ』、時間をたずねる大事な単語)" },
+        { w: "who", j: "だれ", e: "👤", p: "フー (whだけど『フ』と読む例外的な単語)" },
+        { w: "why", j: "なぜ", e: "❓", p: "ワイ (whで『ウ』、yをアルファベット読みでアイ)" },
+        { w: "how", j: "どうやって", e: "💡", p: "ハウ (owは『アウ』と化けるルール)" },
+        { w: "swim", j: "泳ぐ", e: "🏊", p: "スウィム (sとw的音綺麗に繋がる)" },
+        { w: "run", j: "走る", e: "🏃", p: "ラン (uは短く『ア』と発音する)" },
+        { w: "walk", j: "歩く", e: "🚶", p: "ウォーク (lは発音しない黙字ルール)" },
+        { w: "play", j: "（スポーツや楽器を）する", e: "🎸", p: "プレイ (ayは『エイ』と読むセット)" },
+        { w: "read", j: "読む", e: "📖", p: "リード (eaは『イー』と長く伸ばす)" },
+        { w: "look", j: "見る", e: "👀", p: "ルック (ooは『ウ』と短く引く音)" },
+        { w: "see", j: "見える・会う", e: "👁️", p: "シー (eeは『イー』と長く伸ばす)" },
+        { w: "hear", j: "聞こえる", e: "👂", p: "ヒア (earで『イア』と読む塊)" },
+        { w: "listen", j: "聴く", e: "🎧", p: "リッスン (tは発音しない黙字ルール)" },
+        { w: "watch", j: "じっと見る", e: "⌚", p: "ウォッチ (tchで『ッチ』と発音する塊)" },
+        { w: "open", j: "開ける", e: "🔓", p: "オープン (oをアルファベット読みでオゥ)" },
+        { w: "close", j: "閉める", e: "🔒", p: "クロウズ (マジックEでoをオゥと読む。sは濁る)" },
+        { w: "live", j: "住んでいる", e: "🏠", p: "リヴ (iは短く『イ』。例外的にマジックEにならない)" },
+        { w: "love", j: "愛する・大好き", e: "❤️", p: "ラヴ (oだけど『ア』に近い音。例外マジックE)" },
+        { w: "like", j: "好む・好き", e: "👍", p: "ライク (マジックE：iをアルファベット読みでアイ)" },
+        { w: "want", j: "欲しい", e: "🎁", p: "ウォント (aだけど『オ』に近い音になる)" },
+        { w: "have", j: "持っている", e: "👜", p: "ハヴ (例外的にマジックEにならずaを短く発音)" },
+        { w: "know", j: "知っている", e: "🧠", p: "ノウ (最初のkは読まない。owは『オゥ』)" },
+        { w: "help", j: "手伝う", e: "🤝", p: "ヘルプ (eは短い『エ』の音)" },
+        { w: "meet", j: "会う", e: "🤝", p: "ミート (eeは『イー』と長く伸ばす)" },
+        { w: "come", j: "来る", e: "🏃", p: "カム (oだけど『ア』と読む。例外マジックE)" },
+        { w: "go", j: "行く", e: "🚶", p: "ゴゥ (oをアルファベット読みでオゥ)" },
+        { w: "eat", j: "食べる", e: "🍽️", p: "イート (eaは『イー』と長く伸ばす)" },
+        { w: "drink", j: "飲む", e: "🥤", p: "ドリンク (inkは『インク』の塊ルール)" },
+        { w: "sing", j: "歌う", e: "🎤", p: "シング (ingは『イング』の塊ルール)" },
+                // --- ここからセット3（41〜60語目） ---
+        { w: "dance", j: "踊る", e: "💃", p: "ダンス (最後のceは『ス』と読む)" },
+        { w: "smile", j: "微笑む", e: "😊", p: "スマイル (マジックEでiをアイと読む)" },
+        { w: "use", j: "使う", e: "📱", p: "ユーズ (マジックEでuをユーと読む。sは濁る)" },
+        { w: "buy", j: "買う", e: "🛍️", p: "バイ (uyで『アイ』と読む珍しい単語)" },
+        { w: "sell", j: "売る", e: "🏪", p: "セル (eは短い『エ』の音)" },
+        { w: "bring", j: "持ってくる", e: "📦", p: "ブリング (ingは『イング』の塊ルール)" },
+        { w: "carry", j: "運ぶ", e: "📦", p: "キャリー (yは『イー』と読むルール)" },
+        { w: "catch", j: "捕まえる", e: "🎣", p: "キャッチ (tchで『ッチ』と発音する塊)" },
+        { w: "find", j: "見つける", e: "🔍", p: "ファインド (iをアルファベット読みでアイ)" },
+        { w: "lose", j: "失う・負ける", e: "😢", p: "ルーズ (oを『ウー』と伸ばす例外)" },
+        { w: "get", j: "手に入れる", e: "📥", p: "ゲット (eは短い『エ』の音)" },
+        { w: "give", j: "与える", e: "🎁", p: "ギヴ (例外的にマジックEにならない)" },
+        { w: "keep", j: "保つ・続ける", e: "🔒", p: "キープ (eeは『イー』と長く伸ばす)" },
+        { w: "leave", j: "出発する・残す", e: "🚪", p: "リーヴ (eaは『イー』、最後のeは読まない)" },
+        { w: "arrive", j: "到着する", e: "🛬", p: "アライブ (マジックEでiをアイと読む)" },
+        { w: "start", j: "始める", e: "🏁", p: "スタート (arは口を大きく開けて『アー』)" },
+        { w: "stop", j: "止まる", e: "🛑", p: "ストップ (oは短く『オ』)" },
+        { w: "enjoy", j: "楽しむ", e: "🎉", p: "エンジョイ (oyは『オイ』と読むコンビ)" },
+        { w: "learn", j: "学ぶ", e: "📖", p: "ラーン (earだけど『アー』とこもる音)" },
+        { w: "teach", j: "教える", e: "🧑‍🏫", p: "ティーチ (eaは『イー』、chは『チ』)" },
+
+        // --- ここからセット4（61〜80語目） ---
+        { w: "math", j: "数学・算数", e: "🧮", p: "マス (thは前歯で舌をはさむ息の音)" },
+        { w: "music", j: "音楽", e: "🎵", p: "ミュージック (cは最後に『ク』とはじく音)" },
+        { w: "science", j: "理科・科学", e: "🧪", p: "サイエンス (scで『ス』、ceも『ス』)" },
+        { w: "art", j: "美術・芸術", e: "🎨", p: "アート (arは口を大きく開けて『アー』)" },
+        { w: "club", j: "部活・クラブ", e: "⚽", p: "クラブ (uは短く『ア』と発音)" },
+        { w: "class", j: "クラス・授業", e: "🏫", p: "クラス (aは短い『ア』、ssは1つの『ス』)" },
+        { w: "friend", j: "友達", e: "🧑‍🤝‍🧑", p: "フレンド (ieだけど『エ』と読む例外ルール)" },
+        { w: "room", j: "部屋", e: "🚪", p: "ルーム (eeと同じくooも『ウー』と伸ばす)" },
+        { w: "book", j: "本", e: "📘", p: "ブック (ooは『ウ』と短く引く音)" },
+        { w: "chair", j: "椅子", e: "🪑", p: "チェアー (chは『チ』、airで『エアー』の塊)" },
+        { w: "desk", j: "机", e: "🪑", p: "デスク (eは短い『エ』)" },
+        { w: "clock", j: "時計", e: "⏰", p: "クロック (ckで1つの『ク』の音になる)" },
+        { w: "window", j: "窓", e: "🪟", p: "ウィンドウ (owは『オゥ』と読むルール)" },
+        { w: "door", j: "ドア", e: "🚪", p: "ドアー (ooだけど『オアー』と化ける例外)" },
+        { w: "computer", j: "パソコン", e: "💻", p: "コンピューター (erは口をあいまいに『アー』)" },
+        { w: "bag", j: "かばん", e: "🎒", p: "バッグ (gは『グ』とハッキリ発音)" },
+        { w: "pencil", j: "鉛筆", e: "✏️", p: "ペンシル (cのあとにiが来ると『ス』の音に化ける)" },
+        { w: "notebook", j: "ノート", e: "📓", p: "ノートブック (noteはマジックE、bookは短いウ)" },
+        { w: "eraser", j: "消しゴム", e: "🧽", p: "イレイサー (sは濁らず『ス』、erはあいまいに)" },
+        { w: "ruler", j: "定規", e: "📏", p: "ルーラー (erは口の形をあいまいに『アー』)" },
+
+        // --- ここからセット5（81〜100語目） ---
+        { w: "blackboard", j: "黒板", e: "🪵", p: "ブラックボード (oaは『オー』と伸ばすコンビ)" },
+        { w: "classroom", j: "教室", e: "🏫", p: "クラスルーム (ssは『ス』、ooは『ウー』)" },
+        { w: "library", j: "図書館", e: "📚", p: "ライブラリー (yは『イー』と読むルール)" },
+        { w: "gym", j: "体育館", e: "🤸", p: "ジム (gのあとにyが来ると『ジ』の音になる)" },
+        { w: "school", j: "学校", e: "🏫", p: "スクール (chだけど『ク』と読む例外ルール)" },
+        { w: "teacher", j: "先生", e: "🧑‍🏫", p: "ティーチァ (eaは『イー』、chは『チ』)" },
+        { w: "student", j: "生徒", e: "🧑‍🎓", p: "ストゥーデント (eは短い『エ』)" },
+        { w: "homework", j: "宿題", e: "📝", p: "ホームワーク (homeはマジックEでoをオゥ)" },
+        { w: "test", j: "テスト", e: "✏️", p: "テスト (eは短い『エ』)" },
+        { w: "question", j: "質問", e: "❓", p: "クエスチョン (tionは『チョン』『ション』の塊)" },
+        { w: "box", j: "箱", e: "📦", p: "ボックス (xは『クス』という音)" },
+        { w: "key", j: "鍵", e: "🔑", p: "キー (eyは『イー』と長く伸ばすルール)" },
+        { w: "ball", j: "ボール", e: "⚽", p: "ボール (allは『オール』と化けるルール)" },
+        { w: "bat", j: "バット", e: "🏏", p: "バット (aは短い『ア』)" },
+        { w: "racket", j: "ラケット", e: "🎾", p: "ラケット (ckで『ク』、etは『エット』)" },
+        { w: "bike", j: "自転車", e: "🚲", p: "バイク (マジックE：iをアルファベット読み)" },
+        { w: "car", j: "車", e: "🚗", p: "カー (arは口を大きく開けて『アー』)" },
+        { w: "bus", j: "バス", e: "🚌", p: "バス (uは短く『ア』)" },
+        { w: "train", j: "電車・列車", e: "🚆", p: "トレイン (aiは『エイ』と読む母音コンビ)" },
+        { w: "plane", j: "飛行機", e: "✈️", p: "プレイン (マジックE：aをアルファベット読み)" },
+
+        // --- ここからセット6（101〜120語目） ---
+        { w: "boat", j: "ボート", e: "🛥️", p: "ボート (oaは『オー』と伸ばす母音コンビ)" },
+        { w: "ship", j: "船", e: "🚢", p: "シップ (shは『シュ』の塊)" },
+        { w: "cup", j: "カップ", e: "🥤", p: "カップ (uは短く『ア』)" },
+        { w: "dish", j: "お皿", e: "🍽️", p: "ディッシュ (shは『シュ』の塊)" },
+        { w: "knife", j: "ナイフ", e: "🔪", p: "ナイフ (最初のkは読まない。マジックE)" },
+        { w: "fork", j: "フォーク", e: "🍴", p: "フォーク (orは『オー』と伸ばす)" },
+        { w: "spoon", j: "スプーン", e: "🥄", p: "スプーン (ooは『ウー』と長く伸ばす)" },
+        { w: "food", j: "食べ物", e: "🍕", p: "フード (ooは『ウー』と長く伸ばす)" },
+        { w: "water", j: "水", e: "💧", p: "ウォーター (erは口をあいまいに『アー』)" },
+        { w: "milk", j: "牛乳", e: "🥛", p: "ミルク (iは短い『イ』)" },
+        { w: "tea", j: "お茶", e: "🍵", p: "ティー (eaは『イー』と長く伸ばす)" },
+        { w: "coffee", j: "コーヒー", e: "☕", p: "コーヒー (eeは『イー』と長く伸ばす)" },
+        { w: "rice", j: "ご飯・お米", e: "🍚", p: "ライス (マジックE、ceは『ス』)" },
+        { w: "bread", j: "パン", e: "🍞", p: "ブレッド (eaだけど短く『エ』と読む例外)" },
+        { w: "egg", j: "卵", e: "🥚", p: "エッグ (ggだけど『グ』は1回だけ発音)" },
+        { w: "meat", j: "肉", e: "🥩", p: "ミート (eaは『イー』と長く伸ばす)" },
+        { w: "fruit", j: "果物", e: "🍎", p: "フルーツ (uiは『ウー』と伸ばす組み合わせ)" },
+        { w: "apple", j: "りんご", e: "🍎", p: "アップル (leは口をすぼめて『ル』、最後は読まない)" },
+        { w: "banana", j: "バナナ", e: "🍌", p: "バナナ (aが繰り返されるリズム)" },
+        { w: "orange", j: "オレンジ", e: "🍊", p: "オレンジ (最後のgはeの影響で『ジ』と濁る)" },
+
+        // --- ここからセット7（121〜140語目） ---
+        { w: "cake", j: "ケーキ", e: "🍰", p: "ケーキ (マジックE：aをアルファベット読み)" },
+        { w: "cat", j: "猫", e: "🐱", p: "キャット (aは短い『ア』)" },
+        { w: "dog", j: "犬", e: "🐶", p: "ドッグ (oは短く『オ』)" },
+        { w: "bird", j: "鳥", e: "🐦", p: "バード (irは口をあまり開けずに『アー』)" },
+        { w: "fish", j: "魚", e: "🐟", p: "フィッシュ (shは『シュ』の塊)" },
+        { w: "bear", j: "クマ", e: "🐻", p: "ベア (earだけど『エア』と読む例外)" },
+        { w: "lion", j: "ライオン", e: "🦁", p: "ライオン (oはあいまいに発音)" },
+        { w: "rabbit", j: "ウサギ", e: "🐰", p: "ラビット (bbだけど『ブ』は1回)" },
+        { w: "mouse", j: "ネズミ", e: "🐭", p: "マウス (ouは『アウ』、最後のeは読まない)" },
+        { w: "horse", j: "馬", e: "🐴", p: "ホース (orは『オー』、最後のeは読まない)" },
+        { w: "animal", j: "動物", e: "🦁", p: "アニマル (aのリズムに注目)" },
+        { w: "house", j: "家", e: "🏠", p: "ハウス (ouは『アウ』、最後のeは読まない)" },
+        { w: "gate", j: "門", e: "🚪", p: "ゲイト (マジックE：aをアルファベット読み)" },
+        { w: "floor", j: "床", e: "🪵", p: "フロアー (ooだけど『オアー』と化ける例外)" },
+        { w: "roof", j: "屋根", e: "🏠", p: "ルーフ (ooは『ウー』と長く伸ばす)" },
+        { w: "wall", j: "壁", e: "🧱", p: "ウォール (allは『オール』と化けるルール)" },
+        { w: "yard", j: "庭", e: "🏡", p: "ヤード (arは口を大きく開けて『アー』)" },
+        { w: "kitchen", j: "台所", e: "🍳", p: "キッチン (tchで『ッチ』、enは『ン』)" },
+        { w: "bed", j: "ベッド", e: "🛏️", p: "ベッド (eは短い『エ』)" },
+        { w: "table", j: "テーブル", e: "🪵", p: "テーブル (leは口をすぼめて『ル』)" },
+
+        // --- ここからセット8（141〜160語目） ---
+        { w: "sofa", j: "ソファ", e: "開設", p: "oは『オゥ』とアルファベット読みする" },
+        { w: "lamp", j: "灯り・ランプ", e: "💡", p: "aは短い『ア』の音" },
+        { w: "picture", j: "写真・絵", e: "🖼️", p: "tureは『チャー』と読むお決まりの塊" },
+        { w: "flower", j: "花", e: "🌸", p: "owは『アウ』、erはあいませんに『アー』" },
+        { w: "tree", j: "木", e: "🌳", p: "eeは『イー』と長く伸ばすルール" },
+        { w: "sky", j: "空", e: "🌤️", p: "y単体で『アイ』と読むルール" },
+        { w: "sea", j: "海", e: "🌊", p: "eaは『イー』と長く伸ばすルール" },
+        { w: "river", j: "川", e: "🏞️", p: "erは口の形をあいまいに『アー』" },
+        { w: "mountain", j: "山", e: "⛰️", p: "ouは『アウ』、tainは『テン』に近い音" },
+        { w: "stone", j: "石", e: "🪨", p: "ストーン (マジックE：oをアルファベット読みでオゥ)" },
+        { w: "world", j: "世界", e: "🗺️", p: "orだけど『アー』とこもる音になる" },
+        { w: "sun", j: "太陽", e: "☀️", p: "サン (uは短く『ア』と発音する)" },
+        { w: "moon", j: "月", e: "🌙", p: "ムーン (ooは『ウー』と長く伸ばすルール)" },
+        { w: "star", j: "星", e: "⭐", p: "スター (arは口を大きく開けて『アー』)" },
+        { w: "time", j: "時間", e: "⏰", p: "タイム (マジックE：iをアルファベット読みでアイ)" },
+        { w: "hour", j: "1時間", e: "⏳", p: "アワー (最初のhは発音しない黙字ルール)" },
+        { w: "day", j: "日・1日", e: "☀️", p: "デイ (ayは『エイ』と読むセット)" },
+        { w: "week", j: "週", e: "📅", p: "ウィーク (eeは『イー』と長く伸ばすルール)" },
+        { w: "month", j: "月（1ヶ月）", e: "📅", p: "マンス (oだけど『ア』の音、thは息を抜く音)" },
+        { w: "year", j: "年", e: "🗓️", p: "イヤー (earで『イア』と読む塊)" },
+
+        // --- ここからセット9（161〜180語目） ---
+        { w: "morning", j: "朝", e: "🌅", p: "orは『オー』と伸ばし、ingはイング" },
+        { w: "noon", j: "正午・お昼", e: "🕛", p: "ooは『ウー』と長く伸ばすルール" },
+        { w: "afternoon", j: "午後", e: "🌇", p: "ooは『ウー』と長く伸ばすルール" },
+        { w: "evening", j: "夕方・晩", e: "🌆", p: "最初のeを長く伸ばして発音する" },
+        { w: "night", j: "夜", e: "🌃", p: "ighは3文字セットで『アイ』と読む" },
+        { w: "today", j: "今日", e: "📅", p: "ayは『エイ』と読むセット" },
+        { w: "tomorrow", j: "明日", e: "📅", p: "owは『オゥ』と読むルール" },
+        { w: "yesterday", j: "昨日", e: "📅", p: "ayは『エイ』と読むセット" },
+        { w: "now", j: "今", e: "⏰", p: "owは『アウ』と化けるルール" },
+        { w: "then", j: "その時", e: "⏳", p: "ゼン (thは濁る『ザ行』の音になる)" },
+        { w: "always", j: "いつも", e: "🔄", p: "allは『オール』、ayはエイ" },
+        { w: "usually", j: "たいてい", e: "🔄", p: "最初のuをユーと読む" },
+        { w: "often", j: "よく・しばしば", e: "🔄", p: "tを発音しないことが多い黙字" },
+        { w: "sometimes", j: "ときどき", e: "🔄", p: "timeはマジックEでアイ" },
+        { w: "never", j: "一度も〜ない", e: "❌", p: "erは口の形をあいまいに『アー』" },
+        { w: "park", j: "公園", e: "🛝", p: "arは口を大きく開けて『アー』" },
+        { w: "shop", j: "店", e: "🏪", p: "shは『シュ』の塊、oは短いオ" },
+        { w: "store", j: "店", e: "🏪", p: "orは『オー』、最後のeは読まない" },
+        { w: "station", j: "駅", e: "🚉", p: "tionは『ション』と読むお決まりの塊" },
+        { w: "hospital", j: "病院", e: "🏥", p: "iは短い『イ』の音" },
+                // --- ここからセット10（181〜200語目） ---
+        { w: "restaurant", j: "レストラン", e: "🍽️", p: "レストラン (auだけど『ア』に近い音になる)" },
+        { w: "airport", j: "空港", e: "✈️", p: "エアポート (orは『オー』と長く伸ばす)" },
+        { w: "hotel", j: "ホテル", e: "🏨", p: "ホテル (oをオゥ、eをエ)" },
+        { w: "bank", j: "銀行", e: "🏦", p: "バンク (ankは『アンク』となる塊のルール)" },
+        { w: "office", j: "事務所・会社", e: "🏢", p: "オフィス (最後のceは『ス』)" },
+        { w: "zoo", j: "動物園", e: "🦁", p: "ズー (ooは『ウー』と長く伸ばすルール)" },
+        { w: "city", j: "都市・街", e: "🏙️", p: "シティ (cのあとにiが来ると『ス』の音に化ける)" },
+        { w: "town", j: "町", e: "🏘️", p: "タウン (owは『アウ』と化けるルール)" },
+        { w: "village", j: "村", e: "🏡", p: "ヴィレッジ (gのあとのeの影響で『ジ』)" },
+        { w: "country", j: "国・田舎", e: "🗺️", p: "country (ouだけど『ア』と読む例外)" },
+        { w: "street", j: "通り・道", e: "道", p: "ストリート (eeは『イー』と長く伸ばす)" },
+        { w: "road", j: "道路", e: "🛣️", p: "ロード (oaは『オー』と伸ばす母音コンビ)" },
+        { w: "good", j: "良い", e: "👍", p: "グッド (ooは『ウ』と短く引く音)" },
+        { w: "bad", j: "悪い", e: "👎", p: "バッド (aは短い『ア』)" },
+        { w: "big", j: "大きい", e: "🐘", p: "ビッグ (gは『グ』とハッキリ)" },
+        { w: "small", j: "小さい", e: "🐭", p: "スモール (allは『オール』と化けるルール)" },
+        { w: "large", j: "広い・大きい", e: "🐘", p: "ラージ (arは『アー』、gのあとのeで『ジ』)" },
+        { w: "little", j: "小さい・少量の", e: "🍼", p: "リトル (leは口をすぼめて『ル』)" },
+        { w: "long", j: "長い", e: "🐍", p: "ロング (ongは『オング』の塊)" },
+        { w: "short", j: "短い", e: "🩳", p: "ショート (orは『オー』と伸ばす)" },
+
+        // --- ここからセット11（201〜220語目） ---
+        { w: "tall", j: "背が高い", e: "🦒", p: "トール (allは『オール』と化けるルール)" },
+        { w: "high", j: "高い", e: "🏔️", p: "ハイ (ighは3文字セットで『アイ』と読む)" },
+        { w: "low", j: "低い", e: "📉", p: "ロウ (owは『オゥ』と読むルール)" },
+        { w: "new", j: "新しい", e: "✨", p: "ニュー (ewは『ユー』と読むコンビ)" },
+        { w: "old", j: "古い・〜歳", e: "⏳", p: "オールド (oldは『オールド』の塊)" },
+        { w: "young", j: "若い", e: "🧑", p: "ヤング (ouだけど『ア』と読む例外)" },
+        { w: "hot", j: "暑い・熱い", e: "☀️", p: "ホット (oは短く『オ』)" },
+        { w: "cold", j: "寒い・冷たい", e: "❄️", p: "コールド (oldは『コールド』の塊)" },
+        { w: "warm", j: "暖かい", e: "♨️", p: "ウォーム (orの音に化ける例外 arルール)" },
+        { w: "cool", j: "涼しい・かっこいい", e: "😎", p: "クール (ooは『ウー』と長く伸ばす)" },
+        { w: "busy", j: "忙しい", e: "🏃", p: "ビジー (uだけど『イ』と読む超例外)" },
+        { w: "free", j: "暇な・自由な", e: "🕊️", p: "フリー (eeは『イー』と長く伸ばす)" },
+        { w: "early", j: "早い・早く", e: "⏰", p: "アーリー (earで『アー』とこもる音)" },
+        { w: "late", j: "遅い・遅れて", e: "⏰", p: "レイト (マジックE：aをアルファベット読み)" },
+        { w: "fast", j: "速い", e: "🏎️", p: "ファスト (aは短い『ア』)" },
+        { w: "slow", j: "遅い", e: "🐢", p: "スロウ (owは『オゥ』と読むルール)" },
+        { w: "hard", j: "難しい・硬い", e: "🧱", p: "ハード (arは口を大きく開けて『アー』)" },
+        { w: "easy", j: "簡単な", e: "🍀", p: "イージー (eaは『イー』、sが濁る)" },
+        { w: "difficult", j: "難しい", e: "🤯", p: "ディフィカルト (uはあいまいに発音)" },
+        { w: "beautiful", j: "美しい", e: "🌸", p: "ビューティフル (eauで『ビュー』と読む特殊単語)" },
+
+        // --- ここからセット12（221〜240語目） ---
+        { w: "dirty", j: "汚い", e: "🧼", p: "ダーティ (irは口を開けずに『アー』、yはイー)" },
+        { w: "happy", j: "幸せな", e: "✨", p: "ハッピー (ppだけど『プ』は1回、yはイー)" },
+        { w: "sad", j: "悲しい", e: "😢", p: "サッド (aは短い『ア』)" },
+        { w: "angry", j: "怒った", e: "😡", p: "angry (gの音とrの音が綺麗に繋がる)" },
+        { w: "tired", j: "疲れた", e: "🥱", p: "タイアード (erの手前でアが入る)" },
+        { w: "sick", j: "病気の", e: "🤒", p: "シック (ckで1つの『ク』の音になる)" },
+        { w: "fine", j: "元気な・晴れた", e: "☀️", p: "ファイン (マジックE：iをアイ)" },
+        { w: "great", j: "すばらしい", e: "✨", p: "グレイト (eaだけど『エイ』と読む数少ない例外)" },
+        { w: "famous", j: "有名な", e: "🌟", p: "famous (ousは『アス』とあいまいに読む)" },
+        { w: "popular", j: "人気のある", e: "❤️", p: "ポピュラー (arはあいまいに『アー』)" },
+        { w: "favorite", j: "お気に入りの", e: "💖", p: "お気に入り (最後のeは読まない例外)" },
+        { w: "heavy", j: "重い", e: "🏋️", p: "ヘヴィ (eaだけど短く『エ』と読む例外)" },
+        { w: "light", j: "軽い・光", e: "💡", p: "ライト (ighは3文字セットで『アイ』)" },
+        { w: "dark", j: "暗い", e: "🌃", p: "ダーク (arは口を大きく開けて『アー』)" },
+        { w: "bright", j: "明るい", e: "☀️", p: "ブライト (ighは3文字セットで『アイ』)" },
+        { w: "dear", j: "親愛なる", e: "💌", p: "ディア (earで『イア』と読む塊)" },
+        { w: "kind", j: "親切な・種類", e: "🤝", p: "カインド (iをアルファベット読みでアイ)" },
+        { w: "nice", j: "素敵な・親切な", e: "✨", p: "ナイス (マジックE、ceは『ス』)" },
+        { w: "sweet", j: "甘い", e: "🍬", p: "スウィート (eeは『イー』と長く伸ばす)" },
+        { w: "bitter", j: "苦い", e: "☕", p: "ビター (ttだけど『ト』は1回、erはアー)" },
+
+        // --- ここからセット13（241〜260語目） ---
+        { w: "sour", j: "酸っぱい", e: "🍋", p: "サワー (ouは『アウ』と読むルール)" },
+        { w: "salty", j: "塩辛い", e: "🧂", p: "ソルティ (alで『オール』に近い音になる)" },
+        { w: "delicious", j: "美味しい", e: "😋", p: "デリシャス (ciを『シ』、ousを『アス』)" },
+        { w: "hungry", j: "お腹が空いた", e: "🤤", p: "ハングリー (uは短く『ア』、yはイー)" },
+        { w: "thirsty", j: "のどが渇いた", e: "🥤", p: "サースティ (thは息の音、irはこもるアー)" },
+        { w: "full", j: "お腹いっぱいの", e: "🈵", p: "フル (uを『ウ』と短く読む)" },
+        { w: "welcome", j: "ようこそ", e: "👋", p: "ウェルカム (comeと同じくoを『ア』)" },
+        { w: "ready", j: "準備ができた", e: "🏃", p: "レディ (eaだけど短く『エ』と読む例外)" },
+        { w: "careful", j: "注意深い", e: "⚠️", p: "careful (careはマジックE、fulはフル)" },
+        { w: "useful", j: "役に立つ", e: "💡", p: "ユースフル (useはマジックEでユーズ)" },
+        { w: "wonderful", j: "素敵な", e: "✨", p: "ワンダフル (oだけど『ア』と読む例外)" },
+        { w: "different", j: "違った", e: "🔄", p: "ディフレント (erはあいまいに発音)" },
+        { w: "same", j: "同じ", e: "👥", p: "same (マジックE：aをアルファベット読み)" },
+        { w: "important", j: "重要な", e: "⚠️", p: "重要 (orは『オー』、antはアント)" },
+        { w: "interesting", j: "おもしろい", e: "🤔", p: "面白い (ingはイングの塊)" },
+        { w: "exciting", j: "ワクワクする", e: "🔥", p: "ワクワク (最後のeがingに化ける)" },
+        { w: "fun", j: "楽しい", e: "🎉", p: "ファン (uは短く『ア』)" },
+        { w: "sorry", j: "すまなく思って", e: "🙇", p: "ソーリー (oをオー、yをイー)" },
+        { w: "sure", j: "確信して", e: "👍", p: "シュア (suだけど『シュ』と読む例外)" },
+        { w: "me", j: "私を", e: "👤", p: "ミー (eをアルファベット読みで長い『イー』)" },
+
+        // --- ここからセット14（261〜280語目） ---
+        { w: "you", j: "あなたを", e: "🫵", p: "ユー (ouで『ウー』と長く伸ばす特殊な形)" },
+        { w: "him", j: "彼を", e: "👦", p: "ヒム (iは短い『イ』、mは口を閉じる)" },
+        { w: "her", j: "彼女を・彼女の", e: "👧", p: "ハー (erは口の形をあいまいにした『アー』)" },
+        { w: "us", j: "私たちを", e: "🧑‍🤝‍🧑", p: "アス (uは短く『ア』と発音するルール)" },
+        { w: "them", j: "彼らを", e: "👥", p: "ゼム (thは濁る音、eは短い『エ』)" },
+        { w: "this", j: "これ", e: "👉", p: "ジス (thは濁る音、iは短い『イ』)" },
+        { w: "that", j: "あれ", e: "👈", p: "ザット (thは濁る音、aは短い『ア』)" },
+        { w: "some", j: "いくつかの", e: "🍎", p: "サム (oだけど短く『ア』と読む、例外)" },
+        { w: "any", j: "いくつかの(疑問否定)", e: "❓", p: "エニ (aだけど『エ』と読む珍しい例外)" },
+        { w: "all", j: "すべての", e: "💯", p: "オール (allは『オール』と化けるルール)" },
+        { w: "many", j: "たくさんの(数有)", e: "👥", p: "メニ (aだけど『エ』と読む例外、yはイー)" },
+        { w: "much", j: "たくさんの(数無)", e: "💧", p: "マッチ (uは短い『ア』、chは『チ』の塊)" },
+        { w: "here", j: "ここに", e: "📍", p: "ヒア (マジックEの形で、eをアルファベット読み)" },
+        { w: "there", j: "そこに", e: "🗺️", p: "ゼア (thは濁る音、ereで『エア』と読む例外)" },
+        { w: "about", j: "〜について", e: "💬", p: "about (ouは『アウ』と化けるルール)" },
+        { w: "for", j: "〜のために", e: "🎁", p: "フォー (orは『オー』と長く伸ばすルール)" },
+        { w: "with", j: "〜と一緒に", e: "🧑‍🤝‍🧑", p: "ウィズ (iは短い『イ』、thは息を抜く音)" },
+        { w: "under", j: "〜の下に", e: "👇", p: "under (uは短い『ア』、erはあいまい)" },
+        { w: "before", j: "〜の前に", e: "◀️", p: "before (orは『オー』、最後は読まない)" },
+        { w: "after", j: "〜の後で", e: "▶️", p: "after (aは短い『ア』、erはあいまい)" },
+
+        // --- ここからセット15（281〜300語目） ---
+        { w: "between", j: "（2つの）間に", e: "↔️", p: "between (eeは『イー』と長く伸ばす)" },
+        { w: "near", j: "〜の近くに", e: "🏠", p: "ニア (earで『イア』と読むお決まりの塊)" },
+        { w: "from", j: "〜から", e: "🛫", p: "フロム (oは短く『オ』、mは口を閉じる)" },
+        { w: "into", j: "〜の中へ", e: "📥", p: "inとtoが綺麗にくっついた単語" },
+        { w: "through", j: "〜を通り抜けて", e: "🔀", p: "thは息の音、oughで『ルー』と読む特殊語" },
+        { w: "out", j: "外へ", e: "🚪", p: "アウト (ouは『アウ』と化けるルール)" },
+        { w: "over", j: "〜を越えて", e: "🛸", p: "over (oをオゥ、erはあいまい)" },
+        { w: "again", j: "もう一度", e: "🔄", p: "アゲイン (aiだけど『エ』に近い音で読む例外)" },
+        { w: "also", j: "〜もまた", e: "➕", p: "also (alで『オール』、oは『オゥ』)" },
+        { w: "well", j: "上手に", e: "✨", p: "ウェル (eは短い『エ』、llは1つのル)" },
+        { w: "very", j: "とても", e: "🔥", p: "ヴェリ (eは短い『エ』、yは『イー』)" },
+        { w: "together", j: "一緒に", e: "🧑‍🤝‍🧑", p: "together (thは濁る音、erはあいまい)" },
+        { w: "too", j: "〜もまた", e: "➕", p: "トゥー (ooは『ウー』と長く伸ばすルール)" },
+        { w: "back", j: "後ろへ", e: "🔙", p: "バック (ckで1つの『ク』の音になるルール)" },
+        { w: "away", j: "離れて", e: "🏃", p: "アウェイ (ayは『エイ』と読むセット)" },
+        { w: "so", j: "だから・とても", e: "💡", p: "ソゥ (oをアルファベット読みでオゥとする)" },
+        { w: "because", j: "なぜなら〜だから", e: "💡", p: "because (auは『オー』、最後は読まない)" },
+        { w: "if", j: "もし〜ならば", e: "❓", p: "イフ (iは短い『イ』)" },
+        { w: "people", j: "人々", e: "👥", p: "ピープル (eoで『イー』、pleで『プル』)" },
+        { w: "sunday", j: "日曜日", e: "☀️", p: "サンデイ (sun=太陽、day=日。ayは『エイ』)" },
+
+        // --- ここからセット16（301〜320語目） ---
+        { w: "monday", j: "月曜日", e: "🌙", p: "マンデイ (dayは『エイ』と読むセット)" },
+        { w: "tuesday", j: "火曜日", e: "🔥", p: "チューズデイ (ueは『ユー』と伸ばすルール)" },
+        { w: "wednesday", j: "水曜日", e: "💧", p: "ウェンズデイ (最初のdは発音しない黙字)" },
+        { w: "thursday", j: "木曜日", e: "🌳", p: "サーズデイ (thは息、urはこもる『アー』)" },
+        { w: "friday", j: "金曜日", e: "🪙", p: "フライデイ (iをアルファベット読みでアイ)" },
+        { w: "saturday", j: "土曜日", e: "🪵", p: "サタデイ (urは口をあいまいにした『アー』)" },
+        { w: "spring", j: "春", e: "🌸", p: "スプリング (ingは『イング』の塊ルール)" },
+        { w: "summer", j: "夏", e: "🌻", p: "サマー (mmだけどマは1回、erであいまいに)" },
+        { w: "fall", j: "秋", e: "🍂", p: "フォール (allは『オール』と化けるルール)" },
+        { w: "winter", j: "冬", e: "⛄", p: "ウィンター (erは口をあいまいに『アー』)" },
+        { w: "season", j: "季節", e: "四季", p: "シーズン (eaは『イー』と長く伸ばすルール)" },
+        { w: "first", j: "最初の", e: "1️⃣", p: "ファースト (irは口を開けずに『アー』)" },
+        { w: "second", j: "2番目の", e: "2️⃣", p: "セコンド (cのあとにoはあいまいに発音)" },
+        { w: "third", j: "3番目の", e: "3️⃣", p: "サード (thは息の音、irはこもる『アー』)" },
+        { w: "hundred", j: "100", e: "💯", p: "ハンドレッド (eは短い『エ』、dで終わる)" },
+        { w: "thousand", j: "1000", e: "🔢", p: "thousand (ouは『アウ』、andはアンド)" },
+        { w: "zero", j: "ゼロ", e: "0️⃣", p: "ゼロ (eをアルファベット読みで長い『イー』)" },
+        { w: "number", j: "数字・番号", e: "🔢", p: "ナンバー (uは短く『ア』、erはあいまい)" },
+        { w: "point", j: "点、点数", e: "☝️", p: "ポイント (oiは『オイ』と読む組み合わせ)" },
+                // --- ここからセット16の正しい続き ＆ セット17（311〜340語目：1月〜12月・行事） ---
+        { w: "january", j: "1月", e: "🎍", p: "ジャニュアリ (Jは大文字、yは『イー』と読む)" },
+        { w: "february", j: "2月", e: "👹", p: "フェブラリ (最初のrの音を落とさないように注意)" },
+        { w: "march", j: "3月", e: "🎎", p: "マーチ (arは大きく『アー』、chは『チ』の塊)" },
+        { w: "april", j: "4月", e: "🌸", p: "エイプリル (最初のaをアルファベット読みでエイ)" },
+        { w: "may", j: "5月", e: "🎏", p: "メイ (ayは『エイ』と読むコンビのルール)" },
+        { w: "june", j: "6月", e: "☔", p: "ジューン (マジックE：uをアルファベット読みでユー)" },
+        { w: "july", j: "7月", e: "🌌", p: "ジュライ (y単体で『アイ』と読むルール)" },
+        { w: "august", j: "8月", e: "☀️", p: "オーガスト (auは『オー』と長く伸ばすルール)" },
+        { w: "september", j: "9月", e: "🎑", p: "セプテンバー (erは口をあいまいに『アー』)" },
+        { w: "october", j: "10月", e: "🎃", p: "オクトーバー (oをアルファベット読みでオゥ)" },
+        { w: "november", j: "11月", e: "🍁", p: "ノヴェンバー (erは口をあいまいに『アー』)" },
+        { w: "december", j: "12月", e: "🎄", p: "ディセンバー (cのあとにeが来ると『ス』の音)" },
+        { w: "birth", j: "誕生", e: "👶", p: "バース (irはこもるアー、thは息を抜く音)" },
+        { w: "birthday", j: "誕生日", e: "🎂", p: "バースデイ (birthとdayが合体した単語)" },
+        { w: "holiday", j: "祝日、休日", e: "🏖️", p: "ホリデイ (iは短くイ、dayは『エイ』)" },
+        { w: "festival", j: "祭り", e: "🏮", p: "フェスティバル (alはあいまいに『アル』)" },
+        { w: "event", j: "行事、イベント", e: "🎉", p: "イヴェント (vの音をしっかりと発音)" },
+        { w: "party", j: "パーティー", e: "🎉", p: "パーティー (arは『アー』、yは『イー』)" },
+        { w: "concert", j: "コンサート", e: "🎵", p: "コンサート (cのあとにeが来ると『ス』の音)" },
+        { w: "picnic", j: "ピクニック", e: "🧺", p: "ピクニック (cはどちらも『ク』と発音)" },
+
+        // --- ここからセット18（341〜360語目：体・健康） ---
+        { w: "body", j: "体、身体", e: "🧍", p: "ボディ (oは短いオ、yは『イー』と読む)" },
+        { w: "head", j: "頭", e: "🧑", p: "ヘッド (eaだけど短く『エ』と読む例外ルール)" },
+        { w: "hair", j: "髪の毛", e: "💇", p: "ヘア (airで『エア』と読むお決まりの塊)" },
+        { w: "face", j: "顔", e: "🧑", p: "フェイス (マジックE、ceは『ス』と読む)" },
+        { w: "eye", j: "目", e: "👁️", p: "アイ (見た目は特殊だけど発音は『アイ』)" },
+        { w: "ear", j: "耳", e: "👂", p: "イア (earで『イア』と読むお決まりの塊)" },
+        { w: "nose", j: "鼻", e: "👃", p: "ノウズ (マジックE：oをオゥと読む。sは濁る)" },
+        { w: "mouth", j: "口", e: "👄", p: "マウス (ouは『アウ』、thは前歯で舌をはさむ息)" },
+        { w: "tooth", j: "歯", e: "🦷", p: "トゥース (ooは『ウー』、thは息を抜く音)" },
+        { w: "neck", j: "首", e: "🦒", p: "ネック (ckで1つの『ク』の音になるルール)" },
+        { w: "shoulder", j: "肩", e: "💪", p: "ショルダー (ouは『オゥ』に近い音、erはアー)" },
+        { w: "arm", j: "腕", e: "💪", p: "アーム (arは口を大きく開けて『アー』)" },
+        { w: "hand", j: "手", e: "🖐️", p: "ハンド (andは『アンド』の塊ルール)" },
+        { w: "finger", j: "指", e: "☝️", p: "フィンガー (erは口をあいまいに『アー』)" },
+        { w: "leg", j: "脚", e: "🦵", p: "レッグ (eは短い『エ』、gはグ)" },
+        { w: "foot", j: "足", e: "👣", p: "フット (ooは『ウ』と短く引く音)" },
+        { w: "heart", j: "心、心臓", e: "❤️", p: "ハート (earだけど『アー』と大きく開ける例外)" },
+        { w: "voice", j: "声", e: "🗣️", p: "ヴォイス (oiは『オイ』、最後のceは『ス』)" },
+        { w: "health", j: "健康", e: "🥗", p: "ヘルス (eaは短く『エ』、thは息の音)" },
+        { w: "hospital", j: "病院", e: "🏥", p: "ホスピタル (中1で絶対に覚えたい長い名詞)" },
+
+        // --- ここからセット19（361〜380語目：家族・人々） ---
+        { w: "father", j: "父親", e: "👨", p: "ファザー (thは濁る音、erはあいまいに『アー』)" },
+        { w: "mother", j: "母親", e: "👩", p: "マザー (oだけど『ア』に近い音、erはあいまい)" },
+        { w: "parent", j: "親", e: "👪", p: "ペアレント (arで『エア』に近い音、entはエント)" },
+        { w: "son", j: "息子", e: "👦", p: "サン (oだけど『ア』と短く発音する例外単語)" },
+        { w: "daughter", j: "娘", e: "👧", p: "ドーター (auは『オー』、ghは読まない黙字ルール)" },
+        { w: "brother", j: "兄、弟", e: "👦", p: "ブラザー (oだけど『ア』に近い音、thは濁る)" },
+        { w: "sister", j: "姉、妹", e: "👧", p: "シスター (erは口の形をあいまいに『アー』)" },
+        { w: "grandfather", j: "祖父", e: "👴", p: "グランドファザー (dはほとんど発音しない)" },
+        { w: "grandmother", j: "祖母", e: "👵", p: "グランドマザー (grandとmotherの合体)" },
+        { w: "uncle", j: "おじ", e: "👨", p: "アンクル (cleは口をすぼめて『ル』、eは読まない)" },
+        { w: "aunt", j: "おば", e: "👩", p: "アーント (auだけど『アー』と長く伸ばすルール)" },
+        { w: "cousin", j: "いとこ", e: "🧑", p: "カズン (ouだけど短く『ア』、sは濁って『ズ』)" },
+        { w: "baby", j: "赤ちゃん", e: "👶", p: "ベイビー (aをアルファベット読みでエイ、yはイー)" },
+        { w: "child", j: "子ども(単数)", e: "🧒", p: "チャイルド (chは『チ』、iをアイと読むルール)" },
+        { w: "children", j: "子どもたち(複数)", e: "🧒", p: "チルドレン (複数形になるとiが『イ』の音に変化)" },
+        { w: "man", j: "男性", e: "👨", p: "マン (aは口を左右に引いた短い『ア』)" },
+        { w: "woman", j: "女性", e: "👩", p: "ウーマン (oだけど『ウ』に近い音で読む例外)" },
+        { w: "men", j: "男性たち(複数)", e: "👨", p: "メン (eは短い『エ』の音)" },
+        { w: "women", j: "女性たち(複数)", e: "👩", p: "ウィミン (つづりはoだけど『ウィ』と読む超例外)" },
+        { w: "lady", j: "婦人、レディ", e: "👩", p: "レイディ (aをアルファベット読みでエイ、yはイー)" },
+
+        // --- ここからセット20（381〜400語目：趣味・スポーツ） ---
+        { w: "sport", j: "スポーツ", e: "⚽", p: "スポーツ (orは『オー』と長く伸ばすルール)" },
+        { w: "baseball", j: "野球", e: "⚾", p: "ベースボール (baseはマジックE、ballはオール)" },
+        { w: "soccer", j: "サッカー", e: "⚽", p: "サッカー (ccだけどクは1回、erはあいまい)" },
+        { w: "tennis", j: "テニス", e: "🎾", p: "テニス (nnだけどヌは1回、iは短いイ)" },
+        { w: "basketball", j: "バスケットボール", e: "🏀", p: "バスケットボール (ballの塊に注目)" },
+        { w: "volleyball", j: "バレーボール", e: "🏐", p: "バレーボール (eyは『イー』ではなくエイと読む例外)" },
+        { w: "badminton", j: "バドミントン", e: "🏸", p: "バドミントン (tonは『トン』と発音)" },
+        { w: "running", j: "ランニング", e: "🏃", p: "running (runのあとにnを重ねてing)" },
+        { w: "swimming", j: "水泳", e: "🏊", p: "swimming (swimのあとにmを重ねてing)" },
+        { w: "skiing", j: "スキー", e: "⛷️", p: "スキーイング (iが2つ並ぶ珍しいつづり)" },
+        { w: "game", j: "試合、ゲーム", e: "🎮", p: "ゲイム (マジックE：aをアルファベット読みでエイ)" },
+        { w: "toy", j: "おもちゃ", e: "🧸", p: "トイ (oyは『オイ』と発音する組み合わせ)" },
+        { w: "doll", j: "人形", e: "🧸", p: "ドール (oは短いオ、llは1つのル)" },
+        { w: "camera", j: "カメラ", e: "📸", p: "カメラ (erは口をあいまいに『アー』)" },
+        { w: "guitar", j: "ギター", e: "🎸", p: "ギター (uiだけど『イ』、arは大きくアー)" },
+        { w: "piano", j: "ピアノ", e: "🎹", p: "ピアノ (iは短くイ、oはオゥと読む)" },
+        { w: "movie", j: "映画", e: "🎬", p: "ムーヴィ (ieで長い『イー』の音になるルール)" },
+        { w: "comic", j: "漫画", e: "📚", p: "コミック (cはどちらも『ク』と発音)" },
+        { w: "anime", j: "アニメ", e: "📺", p: "アニメ (日本語から世界に広がった単語)" },
+        { w: "hobby", j: "趣味", e: "🎨", p: "ホビ (bbだけどブは1回、yは『イー』)" },
+
+        // --- ここからセット21（401〜420語目：過去形動詞その1） ---
+        { w: "was", j: "〜だった(am,is過去)", e: "⏳", p: "ワズ (aだけど『オ』や『ア』に近い音、sは濁る)" },
+        { w: "were", j: "〜だった(are過去)", e: "⏳", p: "ワー (ereだけど『アー』とこもって伸ばす例外)" },
+        { w: "did", j: "〜した(do過去)", e: "✔️", p: "ディド (iは短い『イ』の音)" },
+        { w: "had", j: "持っていた(have過去)", e: "👜", p: "ハド (aは口を左右に引く短い『ア』)" },
+        { w: "made", j: "作った(make過去)", e: "🛠️", p: "メイド (マジックE：aをアルファベット読みでエイ)" },
+        { w: "went", j: "行った(go過去)", e: "🚶", p: "ウェント (eは短い『エ』、ntはントの塊)" },
+        { w: "came", j: "来た(come過去)", e: "🏃", p: "ケイム (マジックE：aをアルファベット読みでエイ)" },
+        { w: "saw", j: "見た・会った(see過去)", e: "👁️", p: "ソー (awは『オー』と長く伸ばすルール)" },
+        { w: "ate", j: "食べた(eat過去)", e: "🍽️", p: "エイト (マジックE：最初のaをアルファベット読み)" },
+        { w: "drank", j: "飲んだ(drink過去)", e: "🥤", p: "ドランク (ankは『アンク』となる塊ルール)" },
+        { w: "said", j: "言った(say過去)", e: "💬", p: "セッド (aiだけど『エ』と短く読む超ひっかけ例外)" },
+        { w: "told", j: "伝えた(tell過去)", e: "🗣️", p: "トールド (oldは『オールド』となる塊ルール)" },
+        { w: "read", j: "読んだ(read過去)", e: "📖", p: "レッド (つづりは同じだけど発音は『レッド』の例外)" },
+        { w: "wrote", j: "書いた(write過去)", e: "📝", p: "ロウト (最初のwは読まない、マジックEでoをオゥ)" },
+        { w: "spoke", j: "話した(speak過去)", e: "🗣️", p: "スポウク (マジックE：oをアルファベット読み)" },
+        { w: "took", j: "連れていった(take過去)", e: "📸", p: "トゥック (ooは『ウ』と短く引く音)" },
+        { w: "grew", j: "育った(grow過去)", e: "🌱", p: "グルー (ewは『ウー』と長く伸ばすルール)" },
+        { w: "bought", j: "買った(buy過去)", e: "🛍️", p: "ボート (ouはオー、ghtのghは読まない黙字)" },
+        { w: "caught", j: "捕まえた(catch過去)", e: "🎣", p: "コート (auはオー、ghtのghは読まない黙字)" },
+        { w: "thought", j: "考えた(think過去)", e: "🤔", p: "ソート (thは息、ouはオー、ghtのghは黙字)" },
+
+        // --- ここからセット22（421〜440語目：過去形動詞その2） ---
+        { w: "became", j: "〜になった", e: "🧍", p: "ビケイム (cameと同じくマジックEでaをエイ)" },
+        { w: "found", j: "見つけた(過去)", e: "🔍", p: "ファウンド (ouは『アウ』と化けるルール)" },
+        { w: "gave", j: "与えた", e: "🎁", p: "ゲイヴ (過去形になると規則通りマジックEでaをエイ)" },
+        { w: "knew", j: "知っていた", e: "🧠", p: "ニュー (最初のkは読まない、ewは『ユー』)" },
+        { w: "left", j: "出発した・残した", e: "🚪", p: "レフト (eは短い『エ』、ftはフトの塊)" },
+        { w: "lost", j: "失った・負けた", e: "😢", p: "ロスト (oは短く『オ』の音)" },
+        { w: "ran", j: "走った", e: "🏃", p: "ラン (aは口を左右に引く短い『ア』)" },
+        { w: "sang", j: "歌った", e: "🎤", p: "サング (angは『アング』の塊ルール)" },
+        { w: "sat", j: "座った", e: "🪑", p: "サット (aは口を左右に引く短い『ア』)" },
+        { w: "slept", j: "眠った", e: "😴", p: "スレプト (eは短い『エ』、ptはプの塊)" },
+        { w: "stood", j: "立った(過去)", e: "🚶", p: "ストゥッド (ooは『ウ』と短く引く音の例外)" },
+        { w: "swam", j: "泳いだ", e: "🏊", p: "スワム (aは口を左右に引く短い『ア』)" },
+        { w: "heard", j: "聞こえた", e: "👂", p: "ハード (earだけど『アー』とこもって伸ばす)" },
+        { w: "brought", j: "持ってきた(過去)", e: "📦", p: "ブロート (ouはオー、ghtのghは読まない黙字)" },
+        { w: "met", j: "会った(過去)", e: "🤝", p: "メット (eは短い『エ』の音)" },
+        { w: "got", j: "手に入れた(過去)", e: "📥", p: "ゲット (oは短く『オ』の音)" },
+        { w: "put", j: "置いた(過去)", e: "📥", p: "プット (過去形もつづりは全く同じルール)" },
+        { w: "spent", j: "過ごした", e: "⏳", p: "スペント (eは短い『エ』、ntはントの塊)" },
+        { w: "learnt", j: "学んだ(過去)", e: "📖", p: "ラーント (earだけど『アー』とこもる音)" },
+        { w: "thank", j: "〜に感謝する", e: "🤝", p: "サンク (thは息の音、ankはアンクの塊)" },
+
+        // --- ここからセット23（441〜460語目：気持ち・日常動詞） ---
+        { w: "welcome", j: "歓迎する", e: "👋", p: "ウェルカム (comeと同じくoを『ア』)" },
+        { w: "excuse", j: "許す", e: "🙇", p: "イクスキューズ (マジックE：uをユー、sがズ)" },
+        { w: "worry", j: "心配する", e: "😥", p: "ワリー (oだけど『ア』に近い音、yはイー)" },
+        { w: "mean", j: "〜を意味する", e: "💬", p: "ミーン (eaは『イー』と長く伸ばすルール)" },
+        { w: "agree", j: "賛成する", e: "👍", p: "アグリー (eeは『イー』と長く伸ばすルール)" },
+        { w: "believe", j: "信じる", e: "✨", p: "ビリーヴ (ieは『イー』、最後のeは読まない)" },
+        { w: "decide", j: "決める", e: "🎯", p: "ディサイド (マジックE：iをアルファベット読み)" },
+        { w: "forget", j: "忘れる", e: "❓", p: "フォーゲット (orはオー、eは短いエ)" },
+                { w: "remember", j: "思い出す", e: "🧠", p: "erは口をあいまいに『アー』" },
+        { w: "guess", j: "推測する", e: "🤔", p: "guで『ゲ』、ssは1つのス" },
+        { w: "invite", j: "招待する", e: "💌", p: "マジックE：iをアイと読む" },
+        { w: "shout", j: "叫ぶ", e: "🗣️", p: "shはシュ、ouは『アウ』" },
+        { w: "laugh", j: "声を立てて笑う", e: "😆", p: "ghを『フ』と発音する特殊ルール" },
+        { w: "smile", j: "にっこり笑う", e: "😊", p: "マジックE：iをアイ" },
+        { w: "cry", j: "泣く", e: "😭", p: "y単体は『アイ』と読む" },
+        { w: "stay", j: "滞在する", e: "🏨", p: "ayは『エイ』と読むセット" },
+        { w: "travel", j: "旅行する", e: "🧳", p: "aは短いア、vの音を意識" },
+        { w: "arrive", j: "到着する", e: "🛬", p: "マジックE：iをアイ" },
+        { w: "return", j: "戻る・帰る", e: "🔙", p: "urは口を開けない『アー』" },
+        { w: "building", j: "建物、ビル", e: "🏢", p: "uiだけど『イ』と読む特殊ルール" },
+
+        // --- ここからセット24（461〜480語目） ---
+        { w: "castle", j: "城", e: "🏰", p: "tを発音しない黙字、leはル" },
+        { w: "tower", j: "塔、タワー", e: "🗼", p: "owは『アウ』、erはアー" },
+        { w: "temple", j: "お寺", e: "⛩️", p: "leはル、最後は読まない" },
+        { w: "shrine", j: "神社", e: "⛩️", p: "shはシュ、マジックEでiをアイ" },
+        { w: "church", j: "教会", e: "⛪", p: "chはどちらも『チ』" },
+        { w: "museum", j: "博物館", e: "🏛️", p: "uをユー、seをジ、umをアム" },
+        { w: "theater", j: "劇場、映画館", e: "🎭", p: "thは息、erはあいまいなアー" },
+        { w: "zoo", j: "動物園", e: "🦁", p: "ooは『ウー』と長く伸ばす" },
+        { w: "aquarium", j: "水族館", e: "🐬", p: "quで『クヮ』の音になる" },
+        { w: "bakery", j: "パン屋", e: "🍞", p: "aをエイ、yはイー" },
+        { w: "bookstore", j: "本屋、書店", e: "📚", p: "bookとstoreの合体単語" },
+        { w: "supermarket", j: "スーパー", e: "🛒", p: "erもarも『アー』" },
+        { w: "market", j: "市場", e: "🏪", p: "arは大きく『アー』" },
+        { w: "police", j: "警察", e: "🚓", p: "iを長い『イー』で読む例外" },
+        { w: "post", j: "郵便、ポスト", e: "📮", p: "oをアルファベット読みでオゥ" },
+        { w: "fire", j: "火、火事", e: "🔥", p: "マジックE：iをアイ" },
+        { w: "bridge", j: "橋", e: "Bridge", p: "dgeで1つの『ッヂ』という音" },
+        { w: "street", j: "通り、道", e: "道", p: "eeは『イー』と長く伸ばす" },
+        { w: "corner", j: "角、コーナー", e: "📐", p: "orもerも『アー』と伸ばす" },
+        { w: "america", j: "アメリカ", e: "🇺🇸", p: "最初のAは大文字、cはク" },
+
+        // --- ここからセット25（481〜500語目） ---
+        { w: "japan", j: "日本", e: "🇯🇵", p: "Jは大文字、aは短いア" },
+        { w: "japanese", j: "日本語・日本人", e: "🍣", p: "eseは『イーズ』、最後は読まない" },
+        { w: "china", j: "中国", e: "🇨🇳", p: "chは『チ』、iをアイ" },
+        { w: "chinese", j: "中国語・中国人", e: "🐼", p: "chinaの変化形、eseはイーズ" },
+        { w: "korea", j: "韓国", e: "🇰🇷", p: "Kは大文字、eaはイアに近い" },
+        { w: "korean", j: "韓国語・韓国人", e: "🍢", p: "koreaの末尾にnがついた形" },
+        { w: "australia", j: "オーストラリア", e: "🇦🇺", p: "auは『オー』と長く伸ばす" },
+        { w: "canada", j: "カナダ", e: "🇨🇦", p: "Cは大文字、aのリズム" },
+        { w: "brazil", j: "ブラジル", e: "🇧🇷", p: "B大文字、zの濁りに注目" },
+        { w: "uk", j: "イギリス、英国", e: "🇬🇧", p: "両方大文字でタイピング" },
+        { w: "english", j: "英語", e: "🔤", p: "Eは大文字、shは『シュ』" },
+        { w: "language", j: "言語、言葉", e: "Language", p: "最後のgeは『ジ』と濁る" },
+        { w: "world", j: "世界", e: "🗺️", p: "orだけど『アー』とこもる音" },
+        { w: "earth", j: "地球", e: "🌍", p: "earで『アー』、thは息" },
+        { w: "nature", j: "自然", e: "🌿", p: "tureは『チャー』と読む塊" },
+        { w: "island", j: "島", e: "🏝️", p: "最初のsは発音しない黙字" },
+        { w: "beach", j: "浜辺、ビーチ", e: "🏖️", p: "eaは『イー』、chは『チ』" },
+        { w: "forest", j: "森、森林", e: "🌲", p: "oは短いオ、eは短いエ" },
+        { w: "woods", j: "森、林", e: "🌳", p: "ooは『ウ』と短く引く" },
+        { w: "land", j: "土地、陸地", e: "🪵", p: "andは『アンド』となる塊" },
+
+        // --- ここからセット26（501〜520語目） ---
+        { w: "ground", j: "地面", e: "🏃", p: "ouは『アウ』と化ける" },
+        { w: "field", j: "野原・グラウンド", e: "🌱", p: "ieで長い『イー』と読む" },
+        { w: "weather", j: "天気", e: "☀️", p: "ea短く『エ』、thは濁る音" },
+        { w: "rain", j: "雨・雨が降る", e: "🌧️", p: "aiは『エイ』と読む母音" },
+        { w: "snow", j: "雪・雪が降る", e: "❄️", p: "owは『オゥ』と読むルール" },
+        { w: "wind", j: "風", e: "💨", p: "iは短いイ、ndはンド" },
+        { w: "cloud", j: "雲", e: "☁️", p: "ouは『アウ』と化ける" },
+        { w: "air", j: "空気", e: "💨", p: "airで『エア』と読む塊" },
+        { w: "fire", j: "火", e: "🔥", p: "マジックE：iをアイ" },
+        { w: "ice", j: "氷", e: "🧊", p: "マジックE：iをアイ、ceをス" },
+        { w: "rock", j: "岩", e: "🪨", p: "ckで1つの『ク』の音" },
+        { w: "sand", j: "砂、砂浜", e: "🏖️", p: "andは『アンド』となる塊" },
+        { w: "plant", j: "植物", e: "🌱", p: "aは短いア、ntはント" },
+        { w: "leaf", j: "葉（単数形）", e: "🍃", p: "eaは『イー』と長く伸ばす" },
+        { w: "leaves", j: "葉（複数形）", e: "🍃", p: "fがvに化けてesがつく" },
+        { w: "grass", j: "草、芝生", e: "🌱", p: "aは短いア、ssは1つのス" },
+        { w: "wave", j: "波", e: "🌊", p: "マジックE：aをアルファベット読み" },
+        { w: "climb", j: "登る", e: "🧗", p: "最後のbは発音しない黙字" },
+        { w: "shine", j: "輝く", e: "✨", p: "shはシュ、マジックEでiをアイ" },
+        { w: "ticket", j: "切符、チケット", e: "🎫", p: "ckでク、etはエット" },
+
+        // --- ここからセット27（521〜540語目） ---
+        { w: "trip", j: "旅行", e: "🧳", p: "trが繋がる、iは短いイ" },
+        { w: "travel", j: "旅行する", e: "✈️", p: "aは短いア、vの音を意識" },
+        { w: "flight", j: "航空便・フライト", e: "✈️", p: "ighは3文字セットで『アイ』" },
+        { w: "passport", j: "パスポート", e: "🛂", p: "orは『オー』と長く伸ばす" },
+        { w: "baggage", j: "手荷物", e: "🧳", p: "ggは1回、最後のgeでジ" },
+        { w: "map", j: "地図", e: "🗺️", p: "aは口を横に引く短いア" },
+        { w: "guide", j: "案内する", e: "🧑‍✈️", p: "uiだけど『アイ』、最後は黙字" },
+        { w: "driver", j: "運転手", e: "🧑‍✈️", p: "driveの末尾にrがついた形" },
+        { w: "pilot", j: "パイロット", e: "🧑‍✈️", p: "iをアイ、otをオット" },
+        { w: "captain", j: "キャプテン", e: "🧑‍✈️", p: "aiだけど『エ』に近いあいま音" },
+        { w: "passenger", j: "乗客", e: "🧑‍🤝‍🧑", p: "ssはス、erはあいまアー" },
+        { w: "seat", j: "座席、シート", e: "🪑", p: "eaは『イー』と長く伸ばす" },
+        { w: "ride", j: "（乗り物に）乗る", e: "🚲", p: "マジックE：iをアルファベット読み" },
+        { w: "drive", j: "運転する", e: "🚗", p: "マジックE：iをアルファベット読み" },
+        { w: "fly", j: "飛ぶ", e: "✈️", p: "y単体で『アイ』と読むルール" },
+        { w: "sail", j: "航海する", e: "⛵", p: "aiは『エイ』と読む母音" },
+        { w: "cross", j: "渡る、横切る", e: "🚸", p: "oは短いオ、ssは1つのス" },
+        { w: "follow", j: "ついていく", e: "🏃", p: "llは1回、owは『オゥ』" },
+        { w: "lead", j: "導く、案内する", e: "👉", p: "eaは『イー』と長く伸ばす" },
+        { w: "clothes", j: "衣服、服", e: "👕", p: "thは読まず、esでズと濁る" },
+
+        // --- ここからセット28（541〜560語目） ---
+        { w: "shirt", j: "シャツ", e: "👕", p: "shはシュ、irはこもる『アー』" },
+        { w: "pants", j: "ズボン", e: "🩳", p: "通常は複数形のsをつける" },
+        { w: "skirt", j: "スカート", e: "👗", p: "irは口をあまり開けずに『アー』" },
+        { w: "dress", j: "ドレス", e: "👗", p: "drが繋がり、ssは1つのス" },
+        { w: "coat", j: "コート", e: "🧥", p: "oaは『オー』と長く伸ばす" },
+        { w: "jacket", j: "ジャケット", e: "🧥", p: "ckでク、etはエット" },
+        { w: "hat", j: "帽子（ふち有）", e: "🎩", p: "aは口を横に引く短いア" },
+        { w: "cap", j: "帽子（ふち無）", e: "🧢", p: "aは口を横に引く短いア" },
+        { w: "shoes", j: "靴", e: "👟", p: "通常は複数形のsをつける" },
+        { w: "socks", j: "靴下", e: "🧦", p: "通常は複数形のsをつける" },
+        { w: "glove", j: "手袋", e: "🧤", p: "oだけど『ア』、マジックEの例外" },
+        { w: "bag", j: "かばん", e: "🎒", p: "gは『グ』とハッキリ発音" },
+        { w: "pocket", j: "ポケット", e: "🪙", p: "ckでク、etはエット" },
+        { w: "button", j: "ボタン", e: "ボタン", p: "ttだけどトは1回" },
+        { w: "belt", j: "ベルト", e: " Belt", p: "eは短いエ、ltはルトの塊" },
+        { w: "glasses", j: "めがね", e: "👓", p: "esをつけて複数形にする" },
+        { w: "watch", j: "腕時計", e: " watch", p: "tchで『ッチ』と発音する塊" },
+        { w: "ring", j: "指輪、リング", e: "💍", p: "ingは『イング』の塊ルール" },
+        { w: "wear", j: "身につけている", e: "👕", p: "earだけど『エア』と読む例外" },
+        { w: "fever", j: "熱、発熱", e: "🤒", p: "最初にeを長いイー、erはアー" },
+
+        // --- ここからセット29（561〜580語目） ---
+        { w: "cold", j: "風邪", e: "🤧", p: "oldは『オールド』の塊" },
+        { w: "cough", j: "せき", e: "😷", p: "ouはア、ghを『フ』と発音" },
+        { w: "pain", j: "痛み", e: "💥", p: "aiは『エイ』と読む母音" },
+        { w: "headache", j: "頭痛", e: "🤦", p: "head=頭、ache=痛む。chはク" },
+        { w: "stomachache", j: "腹痛", e: "🤢", p: "stomach=お腹、ache=痛み" },
+        { w: "rest", j: "休憩・休む", e: "🛋️", p: "eは短いエ、stはストの塊" },
+        { w: "medicine", j: "薬", e: "💊", p: "最初のcのあとにiでス" },
+        { w: "healthy", j: "健康な", e: "🥗", p: "healthの末尾にyがついた形" },
+        { w: "doctor", j: "医者", e: "🧑‍⚕️", p: "orは口をあいまいにした『アー』" },
+        { w: "nurse", j: "看護師", e: "🧑‍⚕️", p: "urはこもる『アー』、最後は黙字" },
+        { w: "feel", j: "感じる", e: "🤔", p: "eeは『イー』と長く伸ばす" },
+        { w: "hurt", j: "痛む", e: "😭", p: "urは口をあまり開けずに『アー』" },
+        { w: "shake", j: "振る・握手する", e: "🤝", p: "shはシュ、マジックEでaをエイ" },
+        { w: "care", j: "世話・注意", e: "🤝", p: "マジックE：aをエアに近い音" },
+        { w: "save", j: "救う・保存する", e: "💾", p: "マジックE：aをアルファベット読み" },
+        { w: "die", j: "死ぬ", e: "💀", p: "ieで『アイ』と発音するルール" },
+        { w: "alive", j: "生きている", e: "alive", p: "マジックE：iをアルファベット読み" },
+        { w: "strong", j: "強い", e: "💪", p: "ongは『オング』という塊ルール" },
+        { w: "weak", j: "弱い", e: "🌱", p: "eaは『イー』と長く伸ばす" },
+        { w: "idea", j: "考え、アイデア", e: "💡", p: "iをアイ、eaをアと読む" },
+
+        // --- ここからセット30（581〜600語目・ラスト！） ---
+        { w: "reason", j: "理由", e: "💡", p: "eaは『イー』、sがズと濁る" },
+        { w: "fact", j: "事実", e: "✔️", p: "aは短いア、ctはクトの塊" },
+        { w: "piece", j: "1つ・個", e: "🧩", p: "ieは『イー』、最後のceは『ス』" },
+        { w: "part", j: "部分・役割", e: "🧩", p: "arは口を大きく開けて『アー』" },
+        { w: "side", j: "側、面", e: "🫲", p: "マジックE：iをアルファベット読み" },
+        { w: "end", j: "終わり・終わる", e: "🏁", p: "eは短い『エ』の音" },
+        { w: "top", j: "頂上・一番上", e: "🔝", p: "oは短く『オ』の音" },
+        { w: "bottom", j: "底、一番下", e: "👇", p: "ttは1回、oは短いオ" },
+        { w: "front", j: "前面・前部", e: "◀️", p: "oだけど『ア』に近い音の例外" },
+        { w: "back", j: "後ろ・戻る", e: "🔙", p: "ckで1つの『ク』の音" },
+        { w: "future", j: "未来、将来", e: "🛸", p: "uをユー、tureを『チャー』" },
+        { w: "past", j: "過去", e: "⏳", p: "aは短いア、stはストの塊" },
+        { w: "age", j: "年齢・時代", e: "🎂", p: "マジックEでaをエイ、gはジ" },
+        { w: "life", j: "命、生活", e: "❤️", p: "マジックE：iをアルファベット読み" },
+        { w: "death", j: "死", e: "💀", p: "eaは短くエ、thは息を抜く音" },
+        { w: "peace", j: "平和", e: "🕊️", p: "eaは『イー』、最後のceは『ス』" },
+        { w: "war", j: "戦争", e: "⚔️", p: "orの音に化ける例外的なar" },
+                { w: "history", j: "歴史", e: "📜", p: "iは短いイ、oはあいまいに" },
+        { w: "people", j: "人々", e: "👥", p: "eoで『イー』、pleで『プル』" }
+
+
+
+    ];
+
+    // ボタンの初期生成とシステム起動
+    makeBtns();
+</script>
+</body>
+</html>
